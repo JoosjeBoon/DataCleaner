@@ -3,7 +3,11 @@
 	<parent>
 		<groupId>org.eobjects.datacleaner</groupId>
 		<artifactId>DataCleaner-resources</artifactId>
-		<version>5.0.2</version>
+		<version>5.0.2.1</version>
 	</parent>
 	<artifactId>DataCleaner-orderdb</artifactId>
+
+  <scm>
+    <tag>DataCleaner-5.0.2.1-rc1</tag>
+  </scm>
 </project>
