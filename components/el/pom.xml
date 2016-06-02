@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.eobjects.datacleaner</groupId>
 		<artifactId>DataCleaner-components</artifactId>
-		<version>5.0.2</version>
+		<version>5.0.2.1</version>
 	</parent>
 	<artifactId>DataCleaner-el</artifactId>
 	<dependencies>
@@ -23,4 +23,8 @@
 			<artifactId>javax.el-api</artifactId>
 		</dependency>
 	</dependencies>
+
+  <scm>
+    <tag>DataCleaner-5.0.2.1</tag>
+  </scm>
 </project>

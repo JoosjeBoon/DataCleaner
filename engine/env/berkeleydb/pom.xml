@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.eobjects.datacleaner</groupId>
 		<artifactId>DataCleaner-env</artifactId>
-		<version>5.0.2</version>
+		<version>5.0.2.1</version>
 	</parent>
 	<artifactId>DataCleaner-env-berkeleydb</artifactId>
 	<dependencies>
@@ -13,4 +13,8 @@
 			<version>3.2.76</version>
 		</dependency>
 	</dependencies>
+
+  <scm>
+    <tag>DataCleaner-5.0.2.1</tag>
+  </scm>
 </project>

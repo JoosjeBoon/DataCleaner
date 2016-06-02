@@ -3,7 +3,7 @@
 	<parent>
 		<artifactId>DataCleaner-engine</artifactId>
 		<groupId>org.eobjects.datacleaner</groupId>
-		<version>5.0.2</version>
+		<version>5.0.2.1</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
@@ -58,4 +58,8 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+  <scm>
+    <tag>DataCleaner-5.0.2.1</tag>
+  </scm>
 </project>

@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.eobjects.datacleaner</groupId>
 		<artifactId>DataCleaner-env</artifactId>
-		<version>5.0.2</version>
+		<version>5.0.2.1</version>
 	</parent>
 	<artifactId>DataCleaner-env-cluster</artifactId>
 
@@ -81,4 +81,8 @@
 			</exclusions>
 		</dependency>
 	</dependencies>
+
+  <scm>
+    <tag>DataCleaner-5.0.2.1</tag>
+  </scm>
 </project>
