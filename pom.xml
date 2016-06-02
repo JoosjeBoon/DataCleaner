@@ -35,11 +35,9 @@
 		<ocpsoft.rewrite.version>2.0.12.Final</ocpsoft.rewrite.version>
 	</properties>
 	<parent>
-		<!-- Uses the OSS sonatype nexus repository for distribution -->
-		<!-- See https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide -->
-		<groupId>org.sonatype.oss</groupId>
-		<artifactId>oss-parent</artifactId>
-		<version>9</version>
+		<artifactId>parent-pom</artifactId>
+		<groupId>com.hi</groupId>
+		<version>1.21</version>
 	</parent>
 	
 	<groupId>org.eobjects.datacleaner</groupId>
@@ -52,6 +50,35 @@
 	<url>https://datacleaner.org</url>
 	<packaging>pom</packaging>
 	
+	<repositories>
+		<repository>
+			<id>nexus</id>
+			<name>Nexus maven repo at HI</name>
+			<url>http://repo.humaninference.com/content/groups/public</url>
+			<releases>
+				<enabled>true</enabled>
+				<checksumPolicy>fail</checksumPolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<checksumPolicy>fail</checksumPolicy>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>thirdparty</id>
+			<name>Nexus maven repo at HI</name>
+			<url>http://repo.humaninference.com/content/repositories/thirdparty</url>
+			<releases>
+				<checksumPolicy>fail</checksumPolicy>
+			</releases>
+			<snapshots>
+				<checksumPolicy>fail</checksumPolicy>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+
 	<profiles>
 		<profile>
 			<!-- Default profile -->
