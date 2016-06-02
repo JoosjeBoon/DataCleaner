@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.eobjects.datacleaner</groupId>
 		<artifactId>DataCleaner-components</artifactId>
-		<version>5.0.2.1</version>
+		<version>5.0.2.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>DataCleaner-value-distribution</artifactId>
 
@@ -64,8 +64,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
-  <scm>
-    <tag>DataCleaner-5.0.2.1-rc1</tag>
-  </scm>
 </project>
