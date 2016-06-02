@@ -54,7 +54,7 @@
 		<url>https://github.com/JoosjeBoon/DataCleaner.git</url>
 		<connection>scm:git:https://github.com/JoosjeBoon/DataCleaner.git</connection>
 		<developerConnection>scm:git:https://github.com/JoosjeBoon/DataCleaner.git</developerConnection>
-		<tag>DataCleaner-5.0.2.1</tag>
+		<tag>DataCleaner-5.0.2.1-rc</tag>
 	</scm>
 
 	<repositories>
