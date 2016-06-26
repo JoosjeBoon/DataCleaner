@@ -19,6 +19,14 @@
  */
 package org.datacleaner.monitor.server.components;
 
+import static org.easymock.EasyMock.createNiceMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.verify;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -38,9 +46,6 @@ import org.datacleaner.restclient.ComponentList;
 import org.datacleaner.restclient.ComponentList.ComponentInfo;
 import org.easymock.IExpectationSetters;
 import org.junit.Test;
-
-import static org.easymock.EasyMock.*;
-import static org.junit.Assert.*;
 
 @SuppressWarnings("rawtypes")
 public class ComponentListTest {
@@ -70,7 +75,7 @@ public class ComponentListTest {
         assertTrue(componentList.getComponents().isEmpty());
         ComponentDescriptor descriptorMock = getDescriptorMock();
 
-        componentList.add(ComponentControllerV1.createComponentInfo(tenant, descriptorMock, false));
+        componentList.add(ComponentControllerV1.createComponentInfo(tenant, descriptorMock, false, true));
         assertTrue(componentList.getComponents().size() == 1);
 
         verify(configuredPropertyDescriptorMock);
