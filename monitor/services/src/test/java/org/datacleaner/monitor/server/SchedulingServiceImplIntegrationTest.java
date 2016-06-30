@@ -25,8 +25,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import junit.framework.TestCase;
-
 import org.apache.commons.io.FileUtils;
 import org.datacleaner.configuration.DataCleanerEnvironmentImpl;
 import org.datacleaner.monitor.configuration.TenantContextFactory;
@@ -46,6 +44,8 @@ import org.quartz.impl.matchers.GroupMatcher;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import junit.framework.TestCase;
+
 /**
  * Slightly heavier tests than those in {@link SchedulingServiceImplTest}. To
  * avoid the penalty of the {@link #setUp()} here we've separated it from the
@@ -62,7 +62,8 @@ public class SchedulingServiceImplIntegrationTest extends TestCase {
         super.setUp();
         if (service == null) {
             final File targetDir = new File("target/example_repo");
-            FileUtils.deleteDirectory(targetDir);
+            targetDir.delete();
+//            FileUtils.deleteDirectory(targetDir);
             FileUtils.copyDirectory(new File("src/test/resources/example_repo"), targetDir);
 
             final ApplicationContext applicationContext = new ClassPathXmlApplicationContext(
