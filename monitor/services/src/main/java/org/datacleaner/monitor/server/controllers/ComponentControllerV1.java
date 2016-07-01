@@ -151,6 +151,19 @@ public class ComponentControllerV1 {
     @Autowired
     ComponentCache _componentCache;
 
+
+    /**
+     * Allow or denied components
+     *
+     * denied - Throw Runtime Exception
+     *
+     * @param componentName
+     * @throws RuntimeException
+     */
+    protected void canCall(String componentName) throws RuntimeException {
+        return;
+    }
+
     /**
      * It returns a list of all components and their configurations.
      *
