@@ -58,7 +58,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.UrlEscapers;
 
 @Controller
@@ -96,12 +95,11 @@ public class JobsFolderController {
 
     @RequestMapping(method = RequestMethod.GET)
     @ResponseBody
-    public String getFolderJobsByMetadataProperty(@PathVariable("tenant") String tenant,
+    public List<Map<String, Object>> getFolderJobsByMetadataProperty(@PathVariable("tenant") String tenant,
             @RequestParam(value = "property", required = true) String metadataProperty,
             @RequestParam(value = "value", required = true) String metadataPropertyValue)
             throws JsonProcessingException {
         final TenantContext tenantContext = _contextFactory.getContext(tenant);
-        final ObjectMapper objectMapper = new ObjectMapper();
         final List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
         {
             final List<JobIdentifier> jobs = tenantContext.getJobs();
@@ -157,7 +155,7 @@ public class JobsFolderController {
                 }
             }
         }
-        return objectMapper.writeValueAsString(result);
+        return result;
     }
 
     @RolesAllowed(SecurityRoles.JOB_EDITOR)
