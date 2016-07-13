@@ -24,8 +24,6 @@ import java.io.InputStream;
 import java.util.Date;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.metamodel.util.Action;
 import org.datacleaner.components.convert.ConvertToDateTransformer;
@@ -46,6 +44,8 @@ import org.datacleaner.repository.file.FileRepository;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 
+import junit.framework.TestCase;
+
 public class ResultModificationControllerTest extends TestCase {
 
     private ResultModificationController resultModificationController;
@@ -54,7 +54,7 @@ public class ResultModificationControllerTest extends TestCase {
 
     protected void setUp() throws Exception {
         File targetDir = new File("target/repo_result_modification");
-        FileUtils.deleteDirectory(targetDir);
+        targetDir.delete();
         FileUtils.copyDirectory(new File("src/test/resources/example_repo"), targetDir);
         repository = new FileRepository(targetDir);
 
