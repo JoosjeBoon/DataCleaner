@@ -43,6 +43,7 @@ import org.datacleaner.job.runner.AnalysisResultFuture;
 import org.datacleaner.job.runner.AnalysisRunner;
 import org.datacleaner.job.runner.AnalysisRunnerImpl;
 import org.datacleaner.monitor.configuration.PlaceholderAnalysisJob;
+import org.datacleaner.monitor.configuration.PlaceholderAnalysisJobWithAnalyzers;
 import org.datacleaner.monitor.configuration.TenantContext;
 import org.datacleaner.monitor.configuration.TenantContextFactory;
 import org.datacleaner.monitor.job.JobContext;
@@ -97,9 +98,93 @@ public class JobInvocationController {
             @PathVariable("job") String jobName, @RequestBody final JobInvocationPayload input) throws Throwable {
         logger.info("Request payload: {}", input);
 
+        final TenantContext tenantContext = _contextFactory.getContext(tenant);
+        final DataCleanerJobContext analysisJobContext = (DataCleanerJobContext) getJob(jobName, tenantContext);
+        final PojoDatastore placeholderDatastore = createPlaceholderdatastore(input, analysisJobContext);
+        final AnalysisJob originalJob = analysisJobContext.getAnalysisJob();
+
+        final PlaceholderAnalysisJob placeholderAnalysisJob = new PlaceholderAnalysisJob(placeholderDatastore,
+                originalJob);
+
+        final DataCleanerConfiguration configuration = getRunnerConfiguration(tenantContext);
+
+        final AnalysisRunner runner = new AnalysisRunnerImpl(configuration);
+
+        final AnalysisResultFuture resultFuture = runner.run(placeholderAnalysisJob);
+
+        if (resultFuture.isErrornous()) {
+            throw resultFuture.getErrors().get(0);
+        }
+
+        return createOutputRows(resultFuture);
+    }
+
+    /**
+     * Takes a JSON request body on this form (2 rows with 1 int and 2 strings
+     * each):
+     * 
+     * <pre>
+     * {"rows":[
+     *   {"values":[1,"hello","John"]},
+     *   {"values":[1,"howdy","Jane"]}
+     * ]}
+     * </pre>
+     * 
+     * These values will be passed as source records for a job. the job is
+     * responsible for processing the output by means of an analyzer
+     * 
+     * @param tenant
+     * @param jobName
+     * @param input
+     * @throws Throwable
+     */
+    @RequestMapping(value = "/{tenant}/jobs/{job:.+}.invoke.complete", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
+    @ResponseBody
+    @RolesAllowed(SecurityRoles.TASK_ATOMIC_EXECUTOR)
+    public void invokeJobWithAnalyzers(@PathVariable("tenant") final String tenant,
+            @PathVariable("job") String jobName, @RequestBody final JobInvocationPayload input) throws Throwable {
+        logger.info("Request payload: {}", input);
 
         final TenantContext tenantContext = _contextFactory.getContext(tenant);
         final DataCleanerJobContext analysisJobContext = (DataCleanerJobContext) getJob(jobName, tenantContext);
+        final PojoDatastore placeholderDatastore = createPlaceholderdatastore(input, analysisJobContext);
+        final AnalysisJob originalJob = analysisJobContext.getAnalysisJob();
+
+        final PlaceholderAnalysisJobWithAnalyzers placeholderAnalysisJob = new PlaceholderAnalysisJobWithAnalyzers(
+                placeholderDatastore, originalJob);
+
+        final DataCleanerConfiguration configuration = getRunnerConfiguration(tenantContext);
+
+        final AnalysisRunner runner = new AnalysisRunnerImpl(configuration);
+
+        final AnalysisResultFuture resultFuture = runner.run(placeholderAnalysisJob);
+
+        if (resultFuture.isErrornous()) {
+            throw resultFuture.getErrors().get(0);
+        }
+
+    }
+
+    private JobInvocationPayload createOutputRows(final AnalysisResultFuture resultFuture) {
+        final PreviewTransformedDataAnalyzer result = (PreviewTransformedDataAnalyzer) resultFuture.getResults().get(0);
+
+        final JobInvocationPayload output = new JobInvocationPayload();
+        final List<String> outputColumnNames = CollectionUtils.map(result.getColumns(), new HasNameMapper());
+        output.setColumns(outputColumnNames);
+
+        final List<Object[]> collectedRowData = result.getList();
+        for (Object[] outputRow : collectedRowData) {
+            output.addRow(outputRow);
+        }
+
+        logger.info("Response payload: {}", output);
+
+        return output;
+    }
+
+    private PojoDatastore createPlaceholderdatastore(final JobInvocationPayload input,
+            final DataCleanerJobContext analysisJobContext) {
+
         final String tablePath = getTablePath(analysisJobContext.getSourceColumnPaths());
         String schemaName = getSchemaName(tablePath);
         String tableName = getTableName(tablePath);
@@ -118,44 +203,15 @@ public class JobInvocationController {
         // TODO: No column types added
         final SimpleTableDef tableDef = new SimpleTableDef(tableName, columnNames.toArray(new String[0]));
         tableDataProviders.add(new ArrayTableDataProvider(tableDef, inputRowData));
-
         final String datastoreName = analysisJobContext.getSourceDatastoreName();
         final PojoDatastore placeholderDatastore = new PojoDatastore(datastoreName, schemaName, tableDataProviders);
+        return placeholderDatastore;
 
-        final AnalysisJob originalJob = analysisJobContext.getAnalysisJob();
-
-        final PlaceholderAnalysisJob placeholderAnalysisJob = new PlaceholderAnalysisJob(placeholderDatastore,
-                originalJob);
-
-        final DataCleanerConfiguration configuration = getRunnerConfiguration(tenantContext);
-
-        final AnalysisRunner runner = new AnalysisRunnerImpl(configuration);
-
-        final AnalysisResultFuture resultFuture = runner.run(placeholderAnalysisJob);
-
-        if (resultFuture.isErrornous()) {
-            throw resultFuture.getErrors().get(0);
-        }
-
-        final PreviewTransformedDataAnalyzer result = (PreviewTransformedDataAnalyzer) resultFuture.getResults().get(0);
-
-        final JobInvocationPayload output = new JobInvocationPayload();
-        final List<String> outputColumnNames = CollectionUtils.map(result.getColumns(), new HasNameMapper());
-        output.setColumns(outputColumnNames);
-
-        final List<Object[]> collectedRowData = result.getList();
-        for (Object[] outputRow : collectedRowData) {
-            output.addRow(outputRow);
-        }
-
-        logger.info("Response payload: {}", output);
-
-        return output;
     }
 
     /**
-     * Takes a JSON request body containing an array of key value pairs (the example below has 2 rows with 1 int and 2 strings
-     * each):
+     * Takes a JSON request body containing an array of key value pairs (the
+     * example below has 2 rows with 1 int and 2 strings each):
      *
      * <pre>
      * {"rows":[
@@ -163,14 +219,17 @@ public class JobInvocationController {
      *   {"id":2, "name":"Jane", "message": "howdy"}
      * ]}
      * </pre>
-     * The column names as known in the datastore are passed as key for the values.
-     * These values will be passed as source records for a job, and the
+     * 
+     * The column names as known in the datastore are passed as key for the
+     * values. These values will be passed as source records for a job, and the
      * transformed records will be returned.
      *
      * @param tenant
      * @param jobName
      * @param input
-     * @return - returns the output in row/ column format and adds a list with the output/ value map e.g. {"outputColumn1": "Output Value 1", "outputColumn2": "Output Value 2"} per row
+     * @return - returns the output in row/ column format and adds a list with
+     *         the output/ value map e.g. {"outputColumn1": "Output Value 1",
+     *         "outputColumn2": "Output Value 2"} per row
      * @throws Throwable
      */
     @RequestMapping(value = "/{tenant}/jobs/{job:.+}.invoke/mapped", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
@@ -182,7 +241,7 @@ public class JobInvocationController {
         final TenantContext tenantContext = _contextFactory.getContext(tenant);
         final DataCleanerJobContext analysisJobContext = (DataCleanerJobContext) getJob(jobName, tenantContext);
         final List<String> columnPaths = analysisJobContext.getSourceColumnPaths();
-        final List<String> columnNames = getColumnNames(columnPaths,  getTablePath(columnPaths));
+        final List<String> columnNames = getColumnNames(columnPaths, getTablePath(columnPaths));
 
         JobInvocationPayload convertedInput = new JobInvocationPayload();
         convertedInput.setRows(toRows(columnNames, input.getColumnValueMap()));
@@ -216,7 +275,7 @@ public class JobInvocationController {
         return schemaName;
     }
 
-    private List<String> getColumnNames(List<String> columnPaths, String tablePath){
+    private List<String> getColumnNames(List<String> columnPaths, String tablePath) {
         return CollectionUtils.map(columnPaths, new Func<String, String>() {
             @Override
             public String eval(String columnPath) {
@@ -228,7 +287,7 @@ public class JobInvocationController {
         });
     }
 
-    private JobContext getJob(String jobName, TenantContext tenantContext){
+    private JobContext getJob(String jobName, TenantContext tenantContext) {
         jobName = jobName.replaceAll("\\+", " ");
         final JobContext job = tenantContext.getJob(jobName);
         if (!(job instanceof DataCleanerJobContext)) {
@@ -259,14 +318,14 @@ public class JobInvocationController {
         return tablePath;
     }
 
-    private List<JobInvocationRowData> toRows(List<String> columnNames, List<Map<String, Object>> columnValueMapRows){
+    private List<JobInvocationRowData> toRows(List<String> columnNames, List<Map<String, Object>> columnValueMapRows) {
         List<JobInvocationRowData> result = new ArrayList<>();
-        for(Map<String, Object> columnValueMap: columnValueMapRows){
+        for (Map<String, Object> columnValueMap : columnValueMapRows) {
             List<Object> values = new ArrayList<>();
-            for(String columnName: columnNames){
-                if(columnValueMap.containsKey(columnName)){
+            for (String columnName : columnNames) {
+                if (columnValueMap.containsKey(columnName)) {
                     values.add(columnValueMap.get(columnName));
-                }else {
+                } else {
                     values.add(null);
                 }
             }
@@ -276,13 +335,13 @@ public class JobInvocationController {
         return result;
     }
 
-    private List<Map<String, Object>> toColumnValueMap(List<String> columnNames, List<JobInvocationRowData> rows){
+    private List<Map<String, Object>> toColumnValueMap(List<String> columnNames, List<JobInvocationRowData> rows) {
         List<Map<String, Object>> result = new ArrayList<>();
-        for(JobInvocationRowData row: rows){
+        for (JobInvocationRowData row : rows) {
             Object[] values = row.getValues();
             Map<String, Object> columnValueMap = new HashMap<>();
             int index = 0;
-            for(String column: columnNames){
+            for (String column : columnNames) {
                 columnValueMap.put(column, values[index]);
                 index++;
             }

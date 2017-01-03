@@ -19,7 +19,10 @@
  */
 package org.datacleaner.monitor.server.controllers;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import junit.framework.TestCase;
 
@@ -98,6 +101,27 @@ public class JobInvocationControllerTest extends TestCase {
 
         final Object[] values = rows.get(0).getValues();
         assertEquals("[bar foo]", Arrays.toString(values));
+    }
+
+    public void testInvokeFileWithAnalyzers() throws Throwable {
+        final Repository repository = new FileRepository("src/test/resources/example_repo");
+        final TenantContextFactory contextFactory = new TenantContextFactoryImpl(repository,
+                new DataCleanerEnvironmentImpl(), new MockJobEngineManager());
+        final JobInvocationController controller = new JobInvocationController();
+        controller._contextFactory = contextFactory;
+
+        final JobInvocationPayload sourceRecords = new JobInvocationPayload();
+
+        sourceRecords.addRow(new Object[] { "foo", "bar" });
+
+        //final JobInvocationPayload result = 
+        controller.invokeJobWithAnalyzers("tenant1", "concat_job_short_column_paths", sourceRecords);
+
+        //final List<JobInvocationRowData> rows = result.getRows();
+        //assertEquals(1, rows.size());
+
+        //final Object[] values = rows.get(0).getValues();
+        //assertEquals("[bar foo]", Arrays.toString(values));
     }
 
     public void testInvokeFileWithShortColumnPaths() throws Throwable {
