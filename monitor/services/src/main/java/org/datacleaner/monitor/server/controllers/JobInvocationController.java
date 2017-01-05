@@ -131,7 +131,7 @@ public class JobInvocationController {
      * </pre>
      * 
      * These values will be passed as source records for a job. the job is
-     * responsible for processing the output by means of an analyzer
+     * responsible for processing the output therefore return type is void
      * 
      * @param tenant
      * @param jobName
@@ -162,7 +162,37 @@ public class JobInvocationController {
         if (resultFuture.isErrornous()) {
             throw resultFuture.getErrors().get(0);
         }
+    }
 
+    /**
+     * Takes a JSON request body containing an array of key value pairs (the
+     * example below has 2 rows with 1 int and 2 strings each):
+     *
+     * <pre>
+     * {"rows":[
+     *   {"id":1, "name":"John", "message": "hello"},
+     *   {"id":2, "name":"Jane", "message": "howdy"}
+     * ]}
+     * </pre>
+     * 
+     * These values will be passed as source records for a job. The job is
+     * responsible for processing the output therefore return type is void
+     * 
+     * @param tenant
+     * @param jobName
+     * @param input
+     * @throws Throwable
+     */
+    @RequestMapping(value = "/{tenant}/jobs/{job:.+}.invoke.complete/mapped", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
+    @ResponseBody
+    @RolesAllowed(SecurityRoles.TASK_ATOMIC_EXECUTOR)
+    public void invokeJobWithAnalyzersMapped(@PathVariable("tenant") final String tenant,
+            @PathVariable("job") String jobName, @RequestBody final JobInvocationPayload input) throws Throwable {
+        logger.info("Request payload: {}", input);
+
+        JobInvocationPayload convertedInput = convertInput(tenant, jobName, input);
+
+        invokeJobWithAnalyzers(tenant, jobName, convertedInput);
     }
 
     private JobInvocationPayload createOutputRows(final AnalysisResultFuture resultFuture) {
@@ -238,6 +268,14 @@ public class JobInvocationController {
     public JobInvocationPayload invokeJobMapped(@PathVariable("tenant") final String tenant,
             @PathVariable("job") String jobName, @RequestBody final JobInvocationPayload input) throws Throwable {
 
+        JobInvocationPayload convertedInput = convertInput(tenant, jobName, input);
+
+        JobInvocationPayload output = invokeJob(tenant, jobName, convertedInput);
+        output.setColumnValueMap(toColumnValueMap(output.getColumns(), output.getRows()));
+        return output;
+    }
+
+    private JobInvocationPayload convertInput(final String tenant, String jobName, final JobInvocationPayload input) {
         final TenantContext tenantContext = _contextFactory.getContext(tenant);
         final DataCleanerJobContext analysisJobContext = (DataCleanerJobContext) getJob(jobName, tenantContext);
         final List<String> columnPaths = analysisJobContext.getSourceColumnPaths();
@@ -245,10 +283,7 @@ public class JobInvocationController {
 
         JobInvocationPayload convertedInput = new JobInvocationPayload();
         convertedInput.setRows(toRows(columnNames, input.getColumnValueMap()));
-
-        JobInvocationPayload output = invokeJob(tenant, jobName, convertedInput);
-        output.setColumnValueMap(toColumnValueMap(output.getColumns(), output.getRows()));
-        return output;
+        return convertedInput;
     }
 
     private String getTableName(String tablePath) {

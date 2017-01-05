@@ -26,7 +26,15 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
+import org.apache.metamodel.DataContext;
+import org.apache.metamodel.UpdateCallback;
+import org.apache.metamodel.UpdateScript;
+import org.apache.metamodel.UpdateableDataContext;
+import org.apache.metamodel.data.DataSet;
+import org.apache.metamodel.schema.ColumnType;
 import org.datacleaner.configuration.DataCleanerEnvironmentImpl;
+import org.datacleaner.connection.JdbcDatastore;
+import org.datacleaner.connection.UpdateableDatastoreConnection;
 import org.datacleaner.monitor.configuration.TenantContextFactory;
 import org.datacleaner.monitor.configuration.TenantContextFactoryImpl;
 import org.datacleaner.monitor.server.job.MockJobEngineManager;
@@ -103,27 +111,6 @@ public class JobInvocationControllerTest extends TestCase {
         assertEquals("[bar foo]", Arrays.toString(values));
     }
 
-    public void testInvokeFileWithAnalyzers() throws Throwable {
-        final Repository repository = new FileRepository("src/test/resources/example_repo");
-        final TenantContextFactory contextFactory = new TenantContextFactoryImpl(repository,
-                new DataCleanerEnvironmentImpl(), new MockJobEngineManager());
-        final JobInvocationController controller = new JobInvocationController();
-        controller._contextFactory = contextFactory;
-
-        final JobInvocationPayload sourceRecords = new JobInvocationPayload();
-
-        sourceRecords.addRow(new Object[] { "foo", "bar" });
-
-        //final JobInvocationPayload result = 
-        controller.invokeJobWithAnalyzers("tenant1", "concat_job_short_column_paths", sourceRecords);
-
-        //final List<JobInvocationRowData> rows = result.getRows();
-        //assertEquals(1, rows.size());
-
-        //final Object[] values = rows.get(0).getValues();
-        //assertEquals("[bar foo]", Arrays.toString(values));
-    }
-
     public void testInvokeFileWithShortColumnPaths() throws Throwable {
         final Repository repository = new FileRepository("src/test/resources/example_repo");
         final TenantContextFactory contextFactory = new TenantContextFactoryImpl(repository,
@@ -195,6 +182,55 @@ public class JobInvocationControllerTest extends TestCase {
         assertEquals("eobjects.dk", columnValueMap.get(0).get("Domain"));
         assertEquals("kasper.sorensen", columnValueMap.get(1).get("Username"));
         assertEquals("humaninference.com", columnValueMap.get(1).get("Domain"));
-
     }
+
+    public void testInvokeJobWithAnalyzersMapped() throws Throwable {
+
+        String tableName = "test_table";
+        String columnName = "email";
+        JdbcDatastore jdbcDatastore = createDataBaseTable(tableName, columnName);
+
+        final Repository repository = new FileRepository("src/test/resources/example_repo");
+        final TenantContextFactory contextFactory = new TenantContextFactoryImpl(repository,
+                new DataCleanerEnvironmentImpl(), new MockJobEngineManager());
+        final JobInvocationController controller = new JobInvocationController();
+        controller._contextFactory = contextFactory;
+
+        Map<String, Object> value1 = new HashMap<>();
+        value1.put("EMAIL", "kasper@eobjects.dk");
+        Map<String, Object> value2 = new HashMap<>();
+        value2.put("EMAIL", "jasper@eobjects.dk");
+        List<Map<String, Object>> inputColumnValueMap = Arrays.asList(value1, value2);
+        final JobInvocationPayload sourceRecords = new JobInvocationPayload();
+        sourceRecords.setColumnValueMap(inputColumnValueMap);
+
+        controller.invokeJobWithAnalyzersMapped("tenant7", "email_standardizer_to_db", sourceRecords);
+
+        UpdateableDatastoreConnection con = jdbcDatastore.openConnection();
+        DataContext dc = con.getDataContext();
+        DataSet ds = dc.query().from(tableName).select(columnName).orderBy(columnName).execute();
+        assertTrue(ds.next());
+        assertEquals("Row[values=[jasper@eobjects.dk]]", ds.getRow().toString());
+        assertTrue(ds.next());
+        assertEquals("Row[values=[kasper@eobjects.dk]]", ds.getRow().toString());
+        assertFalse(ds.next());
+        con.close();
+    }
+
+    private JdbcDatastore createDataBaseTable(String tableName, String columnName) {
+        JdbcDatastore jdbcDatastore = new JdbcDatastore("my_datastore",
+                "jdbc:hsqldb:mem:UpdateTable_test", "org.hsqldb.jdbcDriver");
+        final UpdateableDatastoreConnection con = jdbcDatastore.openConnection();
+        final UpdateableDataContext dc = con.getUpdateableDataContext();
+        dc.executeUpdate(new UpdateScript() {
+            @Override
+            public void run(UpdateCallback cb) {
+                cb.createTable(dc.getDefaultSchema(), tableName).withColumn(columnName).ofType(ColumnType.VARCHAR)
+                        .execute();
+            }
+        });
+        con.close();
+        return jdbcDatastore;
+    }
+
 }
